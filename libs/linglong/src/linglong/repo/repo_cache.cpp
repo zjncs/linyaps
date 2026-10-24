@@ -264,7 +264,10 @@ RepoCache::queryLayerItem(const repoCacheQuery &query) const noexcept
         auto rhsVersion = linglong::package::Version::parse(rhs.get().info.version.c_str());
         if (!rhsVersion) {
             LogE("Failed to parse rhs version: {}", rhs.get().info.version);
-            return false;
+            // returning false from both directions makes an unparseable item
+            // equivalent to everything, violating the strict weak ordering
+            // std::sort requires (undefined behavior); sort it last instead
+            return true;
         }
         return *lhsVersion > *rhsVersion;
     });
