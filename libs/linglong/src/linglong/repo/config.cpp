@@ -38,8 +38,32 @@ loadConfig(const std::filesystem::path &file) noexcept
                 return LINGLONG_ERR("parse yaml failed");
             }
 
+            // convertToV2 dereferences the v1 defaultRepo entry below;
+            // reject a dangling defaultRepo before that happens
+            auto v1DefaultRepoExists = std::any_of(configV1->repos.begin(),
+                                                   configV1->repos.end(),
+                                                   [&configV1](const auto &repo) {
+                                                       return repo.first == configV1->defaultRepo;
+                                                   });
+            if (!v1DefaultRepoExists) {
+                return LINGLONG_ERR("default repo " + configV1->defaultRepo
+                                    + " not found in v1 config");
+            }
+
             // 将旧版本配置转换为新版本
             config = convertToV2(*configV1);
+        }
+
+        // Enforce at load time the same invariant that saveConfig and
+        // setConfigurationImpl already enforce: otherwise getDefaultRepo()
+        // dereferences the end() iterator below when defaultRepo names a repo
+        // that is not in repos (hand-edited or partially migrated config).
+        auto defaultRepoExists = std::any_of(
+          config->repos.begin(), config->repos.end(), [&config](const auto &repo) {
+              return repo.alias.value_or(repo.name) == config->defaultRepo;
+          });
+        if (!defaultRepoExists) {
+            return LINGLONG_ERR("default repo " + config->defaultRepo + " not found in repos");
         }
 
         return config;
