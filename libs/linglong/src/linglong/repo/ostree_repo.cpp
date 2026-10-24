@@ -1046,18 +1046,23 @@ utils::error::Result<void> OSTreeRepo::undeployedLayer(const std::string &commit
         return LINGLONG_OK;
     }
 
+    // In older versions, LINGLONG_ROOT/layers/<commit> could be a symlink pointing to
+    // LINGLONG_ROOT/layers/<appid>/<version>/<arch>.
+    // This code attempts to clean up any empty parent directories up to `LINGLONG_ROOT/layers/
+    // for compatibility,
+    // QFileInfo caches the state at construction, so capture it BEFORE the deletion:
+    // afterwards the path no longer exists and isSymLink()/symLinkTarget() would
+    // always report false/empty, making the compatibility cleanup dead code.
+    QFileInfo dirInfo{ layerDir->path().c_str() };
+    const bool wasSymlink = dirInfo.isSymLink();
+
     std::error_code ec;
     std::filesystem::remove_all(layerDir->path(), ec);
     if (ec) {
         return LINGLONG_ERR(fmt::format("failed to remove layer dir {}", layerDir->path()), ec);
     }
 
-    // In older versions, LINGLONG_ROOT/layers/<commit> could be a symlink pointing to
-    // LINGLONG_ROOT/layers/<appid>/<version>/<arch>.
-    // This code attempts to clean up any empty parent directories up to `LINGLONG_ROOT/layers/
-    // for compatibility,
-    QFileInfo dirInfo{ layerDir->path().c_str() };
-    if (!dirInfo.isSymLink()) {
+    if (!wasSymlink) {
         return LINGLONG_OK;
     }
 
