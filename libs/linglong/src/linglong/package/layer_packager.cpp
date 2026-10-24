@@ -192,7 +192,13 @@ utils::error::Result<void> LayerPackager::copyFile(LayerFile &file,
                                                    const int64_t offset) const
 {
     LINGLONG_TRACE("save file");
-    file.seek(offset);
+    // a corrupted or hostile layer header can point past EOF; an unchecked
+    // seek silently stays at position 0 and copies the header/JSON prefix
+    // into the extracted erofs image
+    if (!file.seek(offset)) {
+        return LINGLONG_ERR("failed to seek to layer binary data: "
+                            + file.errorString().toStdString());
+    }
     std::ofstream ofs(toPath);
     char buff[4096];
     while (true) {
