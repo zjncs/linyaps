@@ -143,7 +143,7 @@ bool operator==(const VersionV1 &v1, const VersionV2 &v2) noexcept
     }
 
     // 2. V1 不能有非零 tweak
-    bool v1HasNoTweak = !v1.tweak.has_value();
+    bool v1HasNoTweak = !v1.tweak.has_value() || *v1.tweak == 0;
     // 3. V2 不能有预发布标识
     bool v2HasNoPrerelease = v2.prerelease.empty();
     // 4. V2 不能有安全更新
@@ -165,7 +165,7 @@ bool operator<(const VersionV1 &v1, const VersionV2 &v2) noexcept
 
     if (std::tie(v1.major, v1.minor, v1.patch) == std::tie(v2.major, v2.minor, v2.patch)) {
         // V1 不能有非零 tweak
-        bool v1HasNoTweak = !v1.tweak.has_value();
+        bool v1HasNoTweak = !v1.tweak.has_value() || *v1.tweak == 0;
         // V2 不能有预发布标识
         bool v2HasNoPrerelease = v2.prerelease.empty();
         // V2 必须有安全更新
