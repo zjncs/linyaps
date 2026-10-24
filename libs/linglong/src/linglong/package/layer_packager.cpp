@@ -56,6 +56,7 @@ utils::error::Result<void> LayerPackager::initWorkDir()
         ret = this->mkdirDir(dirPath);
         if (!ret) {
             LogE("failed to set work dir: {}", ret.error());
+            return LINGLONG_ERR(ret);
         }
     }
     this->workDir = dirPath;
